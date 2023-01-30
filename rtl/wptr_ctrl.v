@@ -10,7 +10,7 @@ module wptr_ctrl #(ADDR_LEN  = 8)
 
     // Internal signals
     reg  [ADDR_LEN  : 0]    fifo_waddr;
-    wire [ADDR_LEN : 0]     fifo_waddr_cnt, bin2gs;
+    wire [ADDR_LEN : 0]     fifo_waddr_cnt, wptr_gray_next, r2wptr_bin;
     wire                    wfull;
 
     /***************************************************
@@ -32,10 +32,10 @@ module wptr_ctrl #(ADDR_LEN  = 8)
 
     always @(posedge wclk or negedge wrst_n) begin
         if(!wrst_n)  wptr_o <= 0;
-        else wptr_o <= bin2gs;
+        else wptr_o <= wptr_gray_next;
     end
 
-    assign bin2gs = (fifo_waddr_cnt>>1) ^ fifo_waddr_cnt;
+    assign wptr_gray_next = (fifo_waddr_cnt>>1) ^ fifo_waddr_cnt;
 
     /***********************************************
     ********* wfull_o: fifo full logic
@@ -46,8 +46,18 @@ module wptr_ctrl #(ADDR_LEN  = 8)
         else wfull_o <= wfull;
     end
 
-    assign wfull = (bin2gs == {!r2wptr_sync_i[ADDR_LEN:ADDR_LEN-1],r2wptr_sync_i[ADDR_LEN-2:0]});
-
-
+    // wfull asserted by comparing next gray scale write pointer and synchronized read pointer in write domain, using the following three conditions:
+    /*
+        1. The wptr and the synchronized rptr MSB's are not equal (because the wptr must have wrapped
+        one more time than the rptr).
+        2. The wptr and the synchronized rptr 2nd MSB's are not equal (because an inverted 2 nd MSB from 
+        one pointer must be tested against the un-inverted 2 nd MSB from the other pointer, which is required if the
+        MSB's are also inverses of each other.
+        3. All other wptr and synchronized rptr bits must be equal.
+        
+        Reference: https://www.verilogpro.com/asynchronous-fifo-design/
+    */
+    assign wfull = (wptr_gray_next == {!r2wptr_sync_i[ADDR_LEN:ADDR_LEN-1],r2wptr_sync_i[ADDR_LEN-2:0]});
+    
 
 endmodule

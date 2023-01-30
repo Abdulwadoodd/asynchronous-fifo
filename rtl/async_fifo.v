@@ -2,74 +2,26 @@
 module async_fifo #(DATA_LEN = 32,
                     ADDR_LEN = 8) 
     (
-    input                   clk, rst_n, wincr_i, rincr_i,
-    input  [DATA_LEN-1 : 0] wdata_i,
+    input                   wclk, rclk, rst_n, write_en, read_en,
+    input  [DATA_LEN-1 : 0] data_in,
 
-    output [DATA_LEN-1 : 0] rdata_o,
-    output                  rempty_o ,wfull_o);
-    
-    wire wclk, rclk;
+    output [DATA_LEN-1 : 0] data_out,
+    output                  empty ,full);
+
+    // Internal Signals
     wire [ADDR_LEN : 0] r2wptr, w2rptr, wptr, rptr;
     wire [ADDR_LEN-1 : 0] waddr, raddr;
-    wire clkfbw, clkfbr;
 
-    /////////////////////////////////////////////////////////////////
-    // Using 7 series FPGAs PLL primitive for clock gen.
-    // CLKOUT0 = Fclkin * (CLKFBOUT_MULT / CLKOUT0_DIVIDE)
-
-    // clk for write domain = 85MHz = 100*(17/20)
-    PLLE2_BASE
-     #(.BANDWIDTH("OPTIMIZED"),
-       .CLKFBOUT_MULT(17),
-       .CLKIN1_PERIOD(10.0), //100MHz
-       .CLKOUT0_DIVIDE(20),
-       .DIVCLK_DIVIDE(1),
-       .STARTUP_WAIT("FALSE"))
-    wclk_gen
-     (.CLKOUT0(wclk),
-      .CLKOUT1(),
-      .CLKOUT2(),
-      .CLKOUT3(),
-      .CLKOUT4(),
-      .CLKOUT5(),
-      .CLKFBOUT(clkfbw),
-      .LOCKED(),
-      .CLKIN1(clk),
-      .PWRDWN(1'b0),
-      .RST(1'b0),
-      .CLKFBIN(clkfbw));
-    // clk for read domain = 76MHz
-    PLLE2_BASE
-     #(.BANDWIDTH("OPTIMIZED"),
-       .CLKFBOUT_MULT(12),
-       .CLKIN1_PERIOD(10.0), //100MHz
-       .CLKOUT0_DIVIDE(20),
-       .DIVCLK_DIVIDE(1),
-       .STARTUP_WAIT("FALSE"))
-    rclk_gen
-     (.CLKOUT0(rclk),
-      .CLKOUT1(),
-      .CLKOUT2(),
-      .CLKOUT3(),
-      .CLKOUT4(),
-      .CLKOUT5(),
-      .CLKFBOUT(clkfbr),
-      .LOCKED(),
-      .CLKIN1(clk),
-      .PWRDWN(1'b0),
-      .RST(1'b0),
-      .CLKFBIN(clkfbr));
-    ////////////////////////////////////////////////////////////////
-
+    // FIFI Memory (Dual port RAM) Inst.
     fifo_mem #(ADDR_LEN,DATA_LEN)
         ram(
-            .wclk(wclk), .wen_i(wincr_i & !wfull_o),
+            .wclk(wclk), .rclk(rclk), .wen_i(write_en & !full), .ren_i(read_en & !empty),
             .waddr(waddr), .raddr(raddr),
-            .wdata(wdata_i), 
-            .rdata(rdata_o)
+            .wdata(data_in), 
+            .rdata(data_out)
         );
 
-
+    // Write pointer Synchronizer (in read domain)
     sync #(ADDR_LEN)
         sync_w2r (
             .clk(rclk), .rst_n(rst_n),
@@ -77,32 +29,33 @@ module async_fifo #(DATA_LEN = 32,
             .sync_o(w2rptr) 
         );
     
-    
+    // Read pointer Synchronizer (in write domain)
     sync #(ADDR_LEN )
         sync_r2w (
             .clk(wclk), .rst_n(rst_n),
             .sync_i(rptr),
             .sync_o(r2wptr) 
         );
-    
+
+    // Write pointer controller
     wptr_ctrl #(ADDR_LEN)   
         wptr_hndl(
-            .wclk(wclk), .wrst_n(rst_n), .wincr_i(wincr_i),
+            .wclk(wclk), .wrst_n(rst_n), .wincr_i(write_en),
             .r2wptr_sync_i(r2wptr),
 
             .fifo_waddr_o(waddr),
             .wptr_o(wptr),
-            .wfull_o(wfull_o)
+            .wfull_o(full)
         );
-
+    // Read pointer controller
     rptr_ctrl #(ADDR_LEN)
         rptr_hndl(
-        .rclk(rclk), .rrst_n(rst_n), .rincr_i(rincr_i),
+        .rclk(rclk), .rrst_n(rst_n), .rincr_i(read_en),
         .w2rptr_sync_i(w2rptr),
 
         .fifo_raddr_o(raddr),
         .rptr_o(rptr),
-        .rempty_o(rempty_o)
+        .rempty_o(empty)
         );
 
 endmodule

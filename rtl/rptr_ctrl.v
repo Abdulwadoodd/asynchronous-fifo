@@ -10,7 +10,7 @@ module rptr_ctrl #(ADDR_LEN = 8)
 
     // Internal signals
     reg  [ADDR_LEN : 0]     fifo_raddr;
-    wire [ADDR_LEN : 0]     fifo_raddr_cnt, bin2gs;
+    wire [ADDR_LEN : 0]     fifo_raddr_cnt, rptr_gray_next, w2rptr_bin;
     wire                    rempty;
 
     /***************************************************
@@ -32,10 +32,10 @@ module rptr_ctrl #(ADDR_LEN = 8)
 
     always @(posedge rclk or negedge rrst_n) begin
         if(!rrst_n)  rptr_o <= 0;
-        else rptr_o <= bin2gs;
+        else rptr_o <= rptr_gray_next;
     end
 
-    assign bin2gs = (fifo_raddr_cnt>>1) ^ fifo_raddr_cnt;
+    assign rptr_gray_next = (fifo_raddr_cnt>>1) ^ fifo_raddr_cnt;
 
     /***********************************************
     ******* rempty_o: fifo empty logic
@@ -45,8 +45,8 @@ module rptr_ctrl #(ADDR_LEN = 8)
         if(!rrst_n) rempty_o <= 0;
         else rempty_o <= rempty;
     end
-
-    assign rempty = (bin2gs == w2rptr_sync_i);
+    // wempty asserted by comparing next gray scale read pointer and synchronized write pointer in read domain.
+    assign rempty = (rptr_gray_next == w2rptr_sync_i);
 
     
 endmodule
