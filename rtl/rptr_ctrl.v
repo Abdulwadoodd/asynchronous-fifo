@@ -1,5 +1,5 @@
 
-module rptr_ctrl #(ADDR_LEN = 8)
+module rptr_ctrl #(parameter ADDR_LEN = 8)
     (
     input                       rclk, rrst_n, rincr_i,
     input      [ADDR_LEN : 0]   w2rptr_sync_i,

@@ -1,6 +1,6 @@
 
-module async_fifo #(DATA_LEN = 32,
-                    ADDR_LEN = 8) 
+module async_fifo #(parameter DATA_LEN = 32,
+                    parameter ADDR_LEN = 8) 
     (
     input                   wclk, rclk, rst_n, write_en, read_en,
     input  [DATA_LEN-1 : 0] data_in,

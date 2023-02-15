@@ -1,5 +1,5 @@
 
-module wptr_ctrl #(ADDR_LEN  = 8)
+module wptr_ctrl #(parameter ADDR_LEN  = 8)
     (
     input                        wclk, wrst_n, wincr_i,
     input      [ADDR_LEN   : 0]  r2wptr_sync_i,

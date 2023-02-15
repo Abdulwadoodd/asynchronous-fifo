@@ -1,5 +1,5 @@
 
-module sync #(ADDR_LEN = 8)
+module sync #(parameter ADDR_LEN = 8)
     (
     input       clk, rst_n,
     input       [ADDR_LEN : 0] sync_i,

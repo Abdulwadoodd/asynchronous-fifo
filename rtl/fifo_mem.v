@@ -1,6 +1,6 @@
 
-module fifo_mem #(ADDR_LEN = 8,
-                 DATA_LEN = 32)
+module fifo_mem #(parameter ADDR_LEN = 8,
+                 parameter DATA_LEN = 32)
     (
     input                        wclk, rclk, ren_i, wen_i,
     input       [ADDR_LEN-1 : 0] waddr, raddr,
