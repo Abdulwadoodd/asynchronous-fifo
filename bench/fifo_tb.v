@@ -27,8 +27,8 @@ module fifo_tb();
         rclk=0;
     end
     
-    always # (WCLOCK_PERIOD/2) rclk = !rclk;
-    always # (RCLOCK_PERIOD/2) wclk = !wclk;
+    always # (WCLOCK_PERIOD/2) wclk = !wclk;
+    always # (RCLOCK_PERIOD/2) rclk = !rclk;
 
     integer  i;
     initial begin
@@ -39,10 +39,13 @@ module fifo_tb();
         #100
         rst_n = 1;
         #100
-        write_en = 1;
         read_en = 1;
-        for (i=0; i <1000; i=i+1) begin
-            if (!full) wdata = $random();
+        for (i=0; i <200; i=i+1) begin
+            if (!full) begin
+                wdata <= $random(); 
+                write_en <= 1;
+            end 
+            else write_en <=0;
             # (WCLOCK_PERIOD);
         end
         write_en = 0;

@@ -46,8 +46,16 @@ module wptr_ctrl #(parameter ADDR_LEN  = 8)
         else wfull_o <= wfull;
     end
 
-    // wfull asserted by comparing next gray scale write pointer and synchronized read pointer in write domain, using the following three conditions:
-    /*
+    // gray scale to binary decoder
+    genvar i;
+    generate
+        for (i=0; i<=ADDR_LEN; i=i+1) begin
+            assign r2wptr_bin[i] = ^ r2wptr_sync_i[ADDR_LEN : i];
+        end
+    endgenerate
+
+    assign wfull = (fifo_waddr_cnt == {!r2wptr_bin[ADDR_LEN],r2wptr_bin[ADDR_LEN-1:0]});
+    /* wfull asserted by comparing next gray scale write pointer and synchronized read pointer in write domain, using the following three conditions:
         1. The wptr and the synchronized rptr MSB's are not equal (because the wptr must have wrapped
         one more time than the rptr).
         2. The wptr and the synchronized rptr 2nd MSB's are not equal (because an inverted 2 nd MSB from 
@@ -57,7 +65,7 @@ module wptr_ctrl #(parameter ADDR_LEN  = 8)
         
         Reference: https://www.verilogpro.com/asynchronous-fifo-design/
     */
-    assign wfull = (wptr_gray_next == {!r2wptr_sync_i[ADDR_LEN:ADDR_LEN-1],r2wptr_sync_i[ADDR_LEN-2:0]});
+    //assign wfull = (wptr_gray_next == {!r2wptr_sync_i[ADDR_LEN:ADDR_LEN-1],r2wptr_sync_i[ADDR_LEN-2:0]});
     
 
 endmodule
