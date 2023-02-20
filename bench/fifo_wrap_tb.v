@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module fifo_tb();
+module fifo_wrap_tb();
     parameter DATA_LEN = 32;
     parameter ADDR_LEN = 4;
     parameter WCLOCK_PERIOD = 11.4; // (wclk  ~87.71 Mhz)
@@ -12,7 +12,7 @@ module fifo_tb();
     wire [DATA_LEN-1 : 0] rdata;
     wire empty, full;
     // DUT Instantiation
-    async_fifo_wrapper #(DATA_LEN, ADDR_LEN) 
+    fifo_wrapper #(DATA_LEN, ADDR_LEN) 
         DUT(   
             .wclk(wclk), .rclk(rclk), .rst_n(rst_n), .write_en(write_en), .read_en(read_en),
             .wdata_i(wdata),
@@ -30,6 +30,8 @@ module fifo_tb();
     always # (WCLOCK_PERIOD/2) wclk = !wclk;
     always # (RCLOCK_PERIOD/2) rclk = !rclk;
 
+    always @ (*) read_en = empty ? 0 : 1;
+
     integer  i;
     initial begin
         rst_n = 0;
@@ -39,8 +41,8 @@ module fifo_tb();
         #100
         rst_n = 1;
         #100
-        read_en = 1;
-        for (i=0; i <200; i=i+1) begin
+        //read_en = 1;
+        for (i=0; i <1000; i=i+1) begin
             if (!full) begin
                 wdata <= $random(); 
                 write_en <= 1;
